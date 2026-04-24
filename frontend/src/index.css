@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  body {
+    background-color: #0c0c0f;
+    color: #ddd8cf;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #363650;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #484868;
+  }
+
+  ::selection {
+    background: rgba(212, 164, 58, 0.25);
+  }
+}
+
+@layer components {
+  .ghost-input {
+    @apply bg-transparent border-0 border-b border-border focus:border-amber focus:outline-none
+           text-ink placeholder-ink-dim transition-colors w-full py-1;
+  }
+
+  .inline-edit {
+    @apply bg-transparent border-0 outline-none text-inherit w-full
+           focus:bg-surface-2 focus:px-2 focus:rounded transition-all;
+  }
+
+  .tab-btn {
+    @apply px-4 py-2 text-sm font-mono text-ink-muted hover:text-ink transition-colors
+           border-b-2 border-transparent cursor-pointer;
+  }
+
+  .tab-btn.active {
+    @apply text-amber border-amber;
+  }
+
+  .card {
+    @apply bg-surface border border-border rounded-lg;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-amber text-canvas text-sm font-mono font-medium
+           rounded hover:bg-amber-bright active:scale-95 transition-all;
+  }
+
+  .btn-ghost {
+    @apply px-3 py-1.5 text-sm font-mono text-ink-muted hover:text-ink
+           hover:bg-surface-3 rounded transition-all;
+  }
+
+  .btn-danger {
+    @apply px-3 py-1.5 text-sm font-mono text-ink-dim hover:text-status-discarded
+           hover:bg-red-950/30 rounded transition-all;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono
+           cursor-pointer select-none transition-all hover:brightness-110 active:scale-95;
+  }
+
+  .section-title {
+    @apply text-xs font-mono text-ink-dim uppercase tracking-widest mb-4;
+  }
+}
