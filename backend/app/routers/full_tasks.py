@@ -41,6 +41,11 @@ async def create_task(week_id: int, body: FullTaskCreate, current_user: CurrentU
         milestone_dod=body.milestone_dod,
         time_budget_minutes=body.time_budget_minutes,
         limit_mode=body.limit_mode,
+        priority=body.priority,
+        due_at=body.due_at,
+        source=body.source,
+        source_ref=body.source_ref,
+        natural_language_input=body.natural_language_input,
     )
     db.add(task)
     await db.commit()

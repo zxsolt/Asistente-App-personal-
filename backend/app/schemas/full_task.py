@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -13,6 +14,11 @@ class FullTaskCreate(BaseModel):
     milestone_dod: str | None = None
     time_budget_minutes: int | None = Field(default=None, ge=1, le=10080)
     limit_mode: Literal["warn", "hard_stop"] = "warn"
+    priority: Literal["low", "medium", "high"] | None = None
+    due_at: datetime | None = None
+    source: str | None = None
+    source_ref: str | None = None
+    natural_language_input: str | None = None
 
 
 class FullTaskUpdate(BaseModel):
@@ -24,6 +30,11 @@ class FullTaskUpdate(BaseModel):
     time_budget_minutes: int | None = Field(default=None, ge=1, le=10080)
     limit_mode: Literal["warn", "hard_stop"] | None = None
     completed: bool | None = None
+    priority: Literal["low", "medium", "high"] | None = None
+    due_at: datetime | None = None
+    source: str | None = None
+    source_ref: str | None = None
+    natural_language_input: str | None = None
 
 
 class FocusLogCreate(BaseModel):
@@ -44,4 +55,9 @@ class FullTaskResponse(BaseModel):
     time_spent_seconds: int
     limit_mode: str
     completed: bool
+    priority: str | None
+    due_at: datetime | None
+    source: str | None
+    source_ref: str | None
+    natural_language_input: str | None
     actions: list[ActionResponse] = []
