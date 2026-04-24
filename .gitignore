@@ -8,6 +8,7 @@ __pycache__/
 .ruff_cache/
 
 backend/.venv/
+backend/.env
 backend/*.db
 
 frontend/node_modules/
