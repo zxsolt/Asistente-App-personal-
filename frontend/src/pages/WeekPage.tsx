@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { weeksApi } from '@/lib/api';
 import type { WeekDetail } from '@/types';
@@ -47,12 +47,20 @@ export default function WeekPage() {
 
       <header className="sticky top-0 z-20 bg-canvas/85 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="text-ink-muted hover:text-ink font-mono text-sm transition-colors flex items-center gap-1"
-          >
-            ← Semanas
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="text-ink-muted hover:text-ink font-mono text-sm transition-colors flex items-center gap-1"
+            >
+              ← Semanas
+            </button>
+            <Link to="/assistant" className="text-ink-muted hover:text-ink font-mono text-sm transition-colors">
+              Asistente
+            </Link>
+            <Link to="/notes" className="text-ink-muted hover:text-ink font-mono text-sm transition-colors">
+              Notas
+            </Link>
+          </div>
           <div className="w-px h-4 bg-border" />
           {week && (
             <span className="font-serif text-base text-ink">

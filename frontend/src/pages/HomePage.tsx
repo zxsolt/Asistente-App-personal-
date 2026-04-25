@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { weeksApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
@@ -56,6 +56,10 @@ export default function HomePage() {
             <span className="font-serif text-lg font-medium text-ink">Planificador</span>
           </div>
           <div className="flex items-center gap-4">
+            <nav className="hidden sm:flex items-center gap-1">
+              <Link to="/assistant" className="btn-ghost text-xs">Asistente</Link>
+              <Link to="/notes" className="btn-ghost text-xs">Notas</Link>
+            </nav>
             <span className="text-xs font-mono text-ink-dim hidden sm:block">
               {user?.username}
             </span>
@@ -74,6 +78,10 @@ export default function HomePage() {
             <h2 className="font-serif text-3xl font-medium text-ink">
               Semanas de trabajo
             </h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to="/assistant" className="btn-ghost text-xs">Abrir asistente</Link>
+              <Link to="/notes" className="btn-ghost text-xs">Ver notas</Link>
+            </div>
           </div>
           <button
             onClick={() => setCreating(true)}

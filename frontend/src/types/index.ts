@@ -1,5 +1,6 @@
 export type ActionStatus = 'pending' | 'in_progress' | 'done' | 'discarded';
 export type TaskType = 'work' | 'study';
+export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface User {
   id: number;
@@ -42,7 +43,59 @@ export interface FullTask {
   time_spent_seconds: number;
   limit_mode: 'warn' | 'hard_stop';
   completed: boolean;
+  priority: TaskPriority | null;
+  due_at: string | null;
+  source: string | null;
+  source_ref: string | null;
+  natural_language_input: string | null;
   actions: Action[];
+}
+
+export interface Note {
+  id: number;
+  user_id: number;
+  content: string;
+  category: string;
+  source: string;
+  source_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TelegramLink {
+  id: number;
+  user_id: number;
+  telegram_chat_id: number | null;
+  telegram_user_id: number | null;
+  telegram_username: string | null;
+  is_active: boolean;
+  pending_link_expires_at: string | null;
+  last_seen_at: string | null;
+}
+
+export interface TelegramLinkCode {
+  code: string;
+  expires_at: string;
+}
+
+export interface AssistantMessageRequest {
+  message: string;
+  channel: 'web' | 'telegram';
+  metadata?: Record<string, unknown>;
+}
+
+export interface AssistantMessageResponse {
+  reply_text: string;
+  intent:
+    | 'task_create'
+    | 'task_query'
+    | 'note_create'
+    | 'reminder_create'
+    | 'general_query'
+    | 'unknown';
+  action_taken: string;
+  entities: Record<string, unknown>;
+  used_ai: boolean;
 }
 
 export interface PomodoroPreset {

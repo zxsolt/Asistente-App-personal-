@@ -67,6 +67,11 @@ export const fullTasksApi = {
       milestone_dod?: string;
       time_budget_minutes?: number | null;
       limit_mode?: 'warn' | 'hard_stop';
+      priority?: 'low' | 'medium' | 'high' | null;
+      due_at?: string | null;
+      source?: string | null;
+      source_ref?: string | null;
+      natural_language_input?: string | null;
     },
   ) => api.post(`/weeks/${weekId}/tasks/`, d).then((r) => r.data),
   update: (
@@ -80,6 +85,11 @@ export const fullTasksApi = {
       time_budget_minutes: number | null;
       limit_mode: 'warn' | 'hard_stop';
       completed: boolean;
+      priority: 'low' | 'medium' | 'high' | null;
+      due_at: string | null;
+      source: string | null;
+      source_ref: string | null;
+      natural_language_input: string | null;
     }>,
   ) => api.patch(`/weeks/${weekId}/tasks/${tid}`, d).then((r) => r.data),
   logFocus: (weekId: number, tid: number, d: { seconds: number }) =>
@@ -135,4 +145,33 @@ export const pomodoroPresetsApi = {
     music_url: string;
   }) => api.post('/pomodoro-presets/', d).then((r) => r.data),
   delete: (id: number) => api.delete(`/pomodoro-presets/${id}`),
+};
+
+// ─── Assistant ───────────────────────────────────────────────────────────────
+
+export const assistantApi = {
+  sendMessage: (d: {
+    message: string;
+    channel: 'web' | 'telegram';
+    metadata?: Record<string, unknown>;
+  }) => api.post('/assistant/message', d).then((r) => r.data),
+};
+
+// ─── Notes ───────────────────────────────────────────────────────────────────
+
+export const notesApi = {
+  list: () => api.get('/notes/').then((r) => r.data),
+  create: (d: {
+    content: string;
+    category?: string;
+    source?: string;
+    source_ref?: string | null;
+  }) => api.post('/notes/', d).then((r) => r.data),
+};
+
+// ─── Telegram ────────────────────────────────────────────────────────────────
+
+export const telegramApi = {
+  getLink: () => api.get('/telegram/link').then((r) => r.data),
+  createLinkCode: () => api.post('/telegram/link-code').then((r) => r.data),
 };

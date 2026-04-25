@@ -42,6 +42,21 @@ function clampMinutes(value: number): number {
   return Math.max(1, Math.min(10080, Math.floor(value)));
 }
 
+function fmtDueAt(value: string | null): string | null {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function priorityLabel(value: string | null): string | null {
+  if (value === 'high') return 'Alta';
+  if (value === 'medium') return 'Media';
+  if (value === 'low') return 'Baja';
+  return null;
+}
+
 function InlineText({
   value,
   placeholder,
@@ -136,6 +151,8 @@ export default function TaskCard({ task, weekId, onDelete }: Props) {
   const spentMinutes = Math.floor(task.time_spent_seconds / 60);
   const budgetMinutes = task.time_budget_minutes;
   const overBudget = budgetMinutes !== null && spentMinutes >= budgetMinutes;
+  const dueLabel = fmtDueAt(task.due_at);
+  const priority = priorityLabel(task.priority);
 
   useEffect(() => {
     setBudgetInput(task.time_budget_minutes?.toString() ?? '');
@@ -208,6 +225,16 @@ export default function TaskCard({ task, weekId, onDelete }: Props) {
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
+            {priority && (
+              <span className="text-xs font-mono px-2 py-1 rounded-full bg-surface-3 text-amber">
+                {priority}
+              </span>
+            )}
+            {dueLabel && (
+              <span className="text-xs font-mono px-2 py-1 rounded-full bg-surface-3 text-ink-dim">
+                {dueLabel}
+              </span>
+            )}
             <span
               className={`text-xs font-mono px-2 py-1 rounded-full ${
                 overBudget ? 'text-status-discarded bg-red-950/40' : 'text-ink-dim bg-surface-3'
