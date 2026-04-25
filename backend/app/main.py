@@ -3,10 +3,13 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 import app.models  # noqa: F401
-from app.core.database import Base, engine
+from app.core.config import settings
+from app.core.database import AsyncSessionLocal, Base, engine
+from app.core.security import hash_password
+from app.models.user import User
 from app.assistant import router as assistant_router
 from app.notes import router as notes_router
 from app.reminders import router as reminders_router
@@ -44,12 +47,53 @@ async def _ensure_sqlite_task_time_columns() -> None:
             await conn.execute(text("ALTER TABLE full_tasks ADD COLUMN natural_language_input TEXT"))
 
 
+async def _ensure_sqlite_user_columns() -> None:
+    if engine.dialect.name != "sqlite":
+        return
+
+    async with engine.begin() as conn:
+        result = await conn.execute(text("PRAGMA table_info(users)"))
+        columns = {row[1] for row in result.fetchall()}
+
+        if "is_superuser" not in columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN is_superuser BOOLEAN NOT NULL DEFAULT 0"))
+
+
+async def _ensure_bootstrap_admin() -> None:
+    if not settings.ENSURE_BOOTSTRAP_ADMIN:
+        return
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User).where(User.username == settings.BOOTSTRAP_ADMIN_USERNAME)
+        )
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            session.add(
+                User(
+                    username=settings.BOOTSTRAP_ADMIN_USERNAME,
+                    email=settings.BOOTSTRAP_ADMIN_EMAIL,
+                    hashed_password=hash_password(settings.BOOTSTRAP_ADMIN_PASSWORD),
+                    is_superuser=True,
+                )
+            )
+        else:
+            user.email = settings.BOOTSTRAP_ADMIN_EMAIL
+            user.hashed_password = hash_password(settings.BOOTSTRAP_ADMIN_PASSWORD)
+            user.is_superuser = True
+
+        await session.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Create all tables on startup (dev convenience; use Alembic in production)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _ensure_sqlite_task_time_columns()
+    await _ensure_sqlite_user_columns()
+    await _ensure_bootstrap_admin()
     yield
 
 

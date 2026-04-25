@@ -21,5 +21,10 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str | None = None
     TELEGRAM_LINK_CODE_TTL_MINUTES: int = 15
 
+    ENSURE_BOOTSTRAP_ADMIN: bool = True
+    BOOTSTRAP_ADMIN_USERNAME: str = "manolo"
+    BOOTSTRAP_ADMIN_EMAIL: str = "manolo@assistant.local"
+    BOOTSTRAP_ADMIN_PASSWORD: str = "ok"
+
 
 settings = Settings()
