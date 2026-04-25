@@ -39,8 +39,26 @@ def format_note_confirmation(note: Note) -> str:
     return f"Nota guardada en categoria {note.category}: {note.content}"
 
 
+def format_note_list(notes: Sequence[Note], *, heading: str) -> str:
+    if not notes:
+        return f"{heading}: no veo notas guardadas."
+    lines = [f"{heading}:"]
+    for note in notes[:10]:
+        lines.append(f"- {note.content}")
+    return "\n".join(lines)
+
+
 def format_reminder_confirmation(reminder: Reminder) -> str:
     return f"Recordatorio creado: {reminder.title} para {reminder.scheduled_for.isoformat()}"
+
+
+def format_reminder_list(reminders: Sequence[Reminder], *, heading: str) -> str:
+    if not reminders:
+        return f"{heading}: no tienes recordatorios pendientes."
+    lines = [f"{heading}:"]
+    for reminder in reminders[:10]:
+        lines.append(f"- {reminder.title} ({reminder.scheduled_for.isoformat()})")
+    return "\n".join(lines)
 
 
 def format_week_confirmation(week: Week) -> str:

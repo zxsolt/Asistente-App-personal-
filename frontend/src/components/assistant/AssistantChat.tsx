@@ -12,6 +12,7 @@ function metaLabel(response?: AssistantMessageResponse) {
   if (!response) return null;
   return [
     response.intent,
+    response.decision,
     response.persistence_mode,
     response.used_ai ? 'IA' : 'regla',
     `${Math.round(response.confidence * 100)}%`,

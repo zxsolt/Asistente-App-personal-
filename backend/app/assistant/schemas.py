@@ -16,7 +16,9 @@ class AssistantIntent(str, Enum):
     TASK_CREATE = "task_create"
     TASK_QUERY = "task_query"
     NOTE_CREATE = "note_create"
+    NOTE_QUERY = "note_query"
     REMINDER_CREATE = "reminder_create"
+    REMINDER_QUERY = "reminder_query"
     WEEK_CREATE = "week_create"
     GENERAL_QUERY = "general_query"
     UNKNOWN = "unknown"
@@ -31,6 +33,7 @@ class AssistantMessageRequest(BaseModel):
 class AssistantMessageResponse(BaseModel):
     reply_text: str
     intent: AssistantIntent
+    decision: str = "answer"
     action_taken: str
     entities: dict[str, Any] = Field(default_factory=dict)
     used_ai: bool = False

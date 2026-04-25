@@ -90,10 +90,13 @@ export interface AssistantMessageResponse {
     | 'task_create'
     | 'task_query'
     | 'note_create'
+    | 'note_query'
     | 'reminder_create'
+    | 'reminder_query'
     | 'week_create'
     | 'general_query'
     | 'unknown';
+  decision: 'act' | 'answer' | 'clarify';
   action_taken: string;
   entities: Record<string, unknown>;
   used_ai: boolean;

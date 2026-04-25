@@ -43,6 +43,24 @@ def parse_temporal_context(message: str, now: datetime | None = None) -> ParsedT
     current = now or datetime.now(timezone.utc)
     today = current.date()
     normalized = normalize_text(message)
+    relative_minutes = re.search(r"\ben\s+(\d+)\s+minutos?\b", normalized)
+    if relative_minutes:
+        target = current + timedelta(minutes=int(relative_minutes.group(1)))
+        return ParsedTemporalContext(
+            due_at=target,
+            range_start=target.date(),
+            range_end=target.date(),
+            matched_phrase=relative_minutes.group(0),
+        )
+    relative_hours = re.search(r"\ben\s+(\d+)\s+horas?\b", normalized)
+    if relative_hours:
+        target = current + timedelta(hours=int(relative_hours.group(1)))
+        return ParsedTemporalContext(
+            due_at=target,
+            range_start=target.date(),
+            range_end=target.date(),
+            matched_phrase=relative_hours.group(0),
+        )
 
     if "pasado manana" in normalized:
         target = today + timedelta(days=2)

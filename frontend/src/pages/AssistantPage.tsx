@@ -12,7 +12,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'welcome',
     role: 'system',
-    text: 'Prueba mensajes como “crea tarea llamar al dentista manana”, “que tengo hoy” o “apunta nota comprar straps para gym”.',
+    text: 'Escribe como si hablaras con tu asistente en Telegram: “que tengo hoy”, “recuerdame en 10 minutos llamar a mi padre” o “quiero crear una tarea”.',
   },
 ];
 
@@ -121,7 +121,7 @@ export default function AssistantPage() {
               <p className="section-title mb-1">capa visible</p>
               <h1 className="font-serif text-3xl text-ink">Asistente web</h1>
               <p className="mt-3 max-w-sm text-sm leading-6 text-ink-dim">
-                Usa el mismo backend del asistente para probar tareas, consultas y notas sin pasar por Telegram.
+                Esta vista es solo apoyo. El comportamiento principal del asistente esta pensado para Telegram y para tareas, recordatorios y notas.
               </p>
             </div>
             <TelegramLinkCard
