@@ -5,8 +5,9 @@ import httpx
 
 from app.ai.service import OpenRouterService
 from app.assistant.classifier import classify_message
-from app.assistant.date_utils import parse_temporal_context
+from app.assistant.date_utils import normalize_text, parse_temporal_context
 from app.assistant.formatters import (
+    format_multi_task_confirmation,
     format_note_confirmation,
     format_reminder_confirmation,
     format_task_confirmation,
@@ -28,6 +29,49 @@ class AssistantService:
         self.note_service = NoteService(db)
         self.reminder_service = ReminderService(db)
         self.ai_service = OpenRouterService()
+
+    def _extract_multiple_tasks(self, message: str, cleaned_message: str) -> list[str]:
+        normalized = normalize_text(message)
+        if not any(token in normalized for token in ("varias tareas", "muchas tareas", "mas tareas")):
+            return []
+
+        source = cleaned_message if cleaned_message and cleaned_message != message else message
+        if ":" in source:
+            source = source.split(":", 1)[1]
+        separators = (";", "\n", ",")
+        if not any(separator in source for separator in separators):
+            return []
+
+        raw_parts = source.replace("\n", ",").replace(";", ",").split(",")
+        tasks = []
+        for part in raw_parts:
+            candidate = part.strip(" :-")
+            normalized_candidate = normalize_text(candidate)
+            if not candidate:
+                continue
+            if normalized_candidate in {"varias tareas", "muchas tareas", "mas tareas", "tareas"}:
+                continue
+            tasks.append(candidate)
+        return tasks
+
+    def _is_ambiguous_task_request(self, message: str, cleaned_message: str) -> bool:
+        normalized_message = normalize_text(message)
+        normalized_cleaned = normalize_text(cleaned_message)
+        generic_patterns = {
+            "varias tareas",
+            "muchas tareas",
+            "mas tareas",
+            "nuevas tareas",
+            "tareas",
+            "anademe varias tareas",
+            "anade varias tareas",
+            "crea varias tareas",
+        }
+        if normalized_cleaned in generic_patterns or normalized_message in generic_patterns:
+            return True
+        if "varias tareas" in normalized_message and not self._extract_multiple_tasks(message, cleaned_message):
+            return True
+        return False
 
     async def _build_context(self, *, user_id: int) -> dict[str, object]:
         tasks = await self.task_service.get_recent_tasks(user_id=user_id, limit=8)
@@ -66,6 +110,41 @@ class AssistantService:
         )
 
         if classification.intent == AssistantIntent.TASK_CREATE:
+            multiple_tasks = self._extract_multiple_tasks(message, classification.cleaned_message)
+            if multiple_tasks:
+                created_tasks = []
+                for task_name in multiple_tasks:
+                    created_tasks.append(
+                        await self.task_service.create_task(
+                            user_id=user_id,
+                            name=task_name,
+                            task_type=classification.task_type,
+                            due_at=temporal.due_at,
+                            priority=classification.priority,
+                            natural_language_input=message,
+                            source=channel.value,
+                            source_ref=str(metadata.get("message_id")) if metadata.get("message_id") else None,
+                        )
+                    )
+                return AssistantMessageResponse(
+                    reply_text=format_multi_task_confirmation(created_tasks),
+                    intent=classification.intent,
+                    action_taken="task_batch_created",
+                    entities={"task_ids": [task.id for task in created_tasks], "count": len(created_tasks)},
+                )
+
+            if self._is_ambiguous_task_request(message, classification.cleaned_message):
+                return AssistantMessageResponse(
+                    reply_text=(
+                        "Necesito el detalle de las tareas. "
+                        "Puedes enviarmelas en una frase separadas por comas, por ejemplo: "
+                        "\"anademe varias tareas: llamar al dentista, comprar pan, pagar autonomos\"."
+                    ),
+                    intent=classification.intent,
+                    action_taken="task_create_needs_details",
+                    entities={},
+                )
+
             task = await self.task_service.create_task(
                 user_id=user_id,
                 name=classification.cleaned_message or message,

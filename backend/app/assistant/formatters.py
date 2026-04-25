@@ -15,6 +15,15 @@ def format_task_confirmation(task: FullTask) -> str:
     return " | ".join(parts)
 
 
+def format_multi_task_confirmation(tasks: Sequence[FullTask]) -> str:
+    if not tasks:
+        return "No he podido crear tareas."
+    lines = ["Tareas creadas:"]
+    for task in tasks[:10]:
+        lines.append(f"- {task.name}")
+    return "\n".join(lines)
+
+
 def format_task_list(tasks: Sequence[FullTask], *, heading: str) -> str:
     if not tasks:
         return f"{heading}: no tienes tareas registradas."
