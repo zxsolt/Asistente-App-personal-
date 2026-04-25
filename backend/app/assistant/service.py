@@ -11,6 +11,7 @@ from app.assistant.formatters import (
     format_reminder_confirmation,
     format_task_confirmation,
     format_task_list,
+    format_week_confirmation,
 )
 from app.assistant.schemas import AssistantChannel, AssistantIntent, AssistantMessageResponse
 from app.assistant.task_service import AssistantTaskService
@@ -117,6 +118,20 @@ class AssistantService:
                 intent=classification.intent,
                 action_taken="note_created",
                 entities={"note_id": note.id},
+            )
+
+        if classification.intent == AssistantIntent.WEEK_CREATE:
+            anchor_day = temporal.range_start
+            week = await self.task_service.create_week(user_id=user_id, anchor_day=anchor_day)
+            return AssistantMessageResponse(
+                reply_text=format_week_confirmation(week),
+                intent=classification.intent,
+                action_taken="week_created",
+                entities={
+                    "week_id": week.id,
+                    "start_date": week.start_date.isoformat(),
+                    "end_date": week.end_date.isoformat(),
+                },
             )
 
         if classification.intent == AssistantIntent.REMINDER_CREATE:

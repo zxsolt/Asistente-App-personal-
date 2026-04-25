@@ -15,6 +15,7 @@ class AssistantIntent(str, Enum):
     TASK_QUERY = "task_query"
     NOTE_CREATE = "note_create"
     REMINDER_CREATE = "reminder_create"
+    WEEK_CREATE = "week_create"
     GENERAL_QUERY = "general_query"
     UNKNOWN = "unknown"
 

@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from app.models.full_task import FullTask
 from app.models.note import Note
 from app.models.reminder import Reminder
+from app.models.week import Week
 
 
 def format_task_confirmation(task: FullTask) -> str:
@@ -31,3 +32,7 @@ def format_note_confirmation(note: Note) -> str:
 
 def format_reminder_confirmation(reminder: Reminder) -> str:
     return f"Recordatorio creado: {reminder.title} para {reminder.scheduled_for.isoformat()}"
+
+
+def format_week_confirmation(week: Week) -> str:
+    return f"Semana creada: {week.start_date.isoformat()} -> {week.end_date.isoformat()}"

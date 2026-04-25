@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +26,35 @@ class AssistantTaskService:
         week = Week(user_id=user_id, start_date=start_of_week(day), end_date=end_of_week(day))
         self.db.add(week)
         await self.db.flush()
+        return week
+
+    async def create_week(self, *, user_id: int, anchor_day: date | None = None) -> Week:
+        if anchor_day is not None:
+            existing = await self._find_week_covering(user_id=user_id, day=anchor_day)
+            if existing:
+                return existing
+
+            week = Week(user_id=user_id, start_date=start_of_week(anchor_day), end_date=end_of_week(anchor_day))
+            self.db.add(week)
+            await self.db.commit()
+            await self.db.refresh(week)
+            return week
+
+        result = await self.db.execute(
+            select(Week).where(Week.user_id == user_id).order_by(Week.end_date.desc()).limit(1)
+        )
+        last_week = result.scalar_one_or_none()
+
+        if last_week is None:
+            target_day = datetime.now(timezone.utc).date()
+            week = Week(user_id=user_id, start_date=start_of_week(target_day), end_date=end_of_week(target_day))
+        else:
+            start = last_week.end_date + timedelta(days=1)
+            week = Week(user_id=user_id, start_date=start, end_date=start + timedelta(days=6))
+
+        self.db.add(week)
+        await self.db.commit()
+        await self.db.refresh(week)
         return week
 
     async def create_task(

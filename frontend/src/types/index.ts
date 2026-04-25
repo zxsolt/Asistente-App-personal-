@@ -91,6 +91,7 @@ export interface AssistantMessageResponse {
     | 'task_query'
     | 'note_create'
     | 'reminder_create'
+    | 'week_create'
     | 'general_query'
     | 'unknown';
   action_taken: string;
