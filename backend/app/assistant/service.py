@@ -17,6 +17,7 @@ from app.assistant.formatters import (
 from app.assistant.schemas import AssistantChannel, AssistantIntent, AssistantMessageResponse
 from app.assistant.task_service import AssistantTaskService
 from app.notes.service import NoteService
+from app.planner.context_service import PlannerContextService
 from app.planner.service import PlannerService
 from app.reminders.service import ReminderService
 
@@ -31,6 +32,7 @@ class AssistantService:
         self.reminder_service = ReminderService(db)
         self.ai_service = OpenRouterService()
         self.planner_service = PlannerService(db)
+        self.context_service = PlannerContextService(db)
 
     def _extract_multiple_tasks(self, message: str, cleaned_message: str) -> list[str]:
         normalized = normalize_text(message)
@@ -76,20 +78,7 @@ class AssistantService:
         return False
 
     async def _build_context(self, *, user_id: int) -> dict[str, object]:
-        tasks = await self.task_service.get_recent_tasks(user_id=user_id, limit=8)
-        reminders = await self.reminder_service.get_active_for_user(user_id=user_id, limit=5)
-        notes = await self.note_service.list_for_user(user_id=user_id, limit=5)
-        return {
-            "tasks": [
-                {"name": task.name, "completed": task.completed, "due_at": task.due_at.isoformat() if task.due_at else None}
-                for task in tasks
-            ],
-            "reminders": [
-                {"title": reminder.title, "scheduled_for": reminder.scheduled_for.isoformat()}
-                for reminder in reminders
-            ],
-            "notes": [{"content": note.content, "category": note.category} for note in notes],
-        }
+        return await self.context_service.build_prioritized_context(user_id=user_id, query="")
 
     async def handle_message(
         self,
@@ -125,6 +114,8 @@ class AssistantService:
                 used_ai=False,
                 persistence_mode=planner_result.persistence_mode,
                 planning_json=planner_result.planning_json,
+                confidence=0.72,
+                rationale_summary="He interpretado la entrada como una necesidad de planificacion con varias decisiones implicitas.",
             )
 
         if classification.intent == AssistantIntent.TASK_CREATE:
@@ -150,6 +141,8 @@ class AssistantService:
                     action_taken="task_batch_created",
                     entities={"task_ids": [task.id for task in created_tasks], "count": len(created_tasks)},
                     persistence_mode="applied",
+                    confidence=0.93,
+                    rationale_summary="La peticion contenia varias tareas separadas de forma clara y se han creado en lote.",
                 )
 
             if self._is_ambiguous_task_request(message, classification.cleaned_message):
@@ -163,6 +156,8 @@ class AssistantService:
                     action_taken="task_create_needs_details",
                     entities={},
                     persistence_mode="draft",
+                    confidence=0.35,
+                    rationale_summary="He detectado intencion de crear tareas, pero faltan los contenidos concretos.",
                 )
 
             task = await self.task_service.create_task(
@@ -185,6 +180,8 @@ class AssistantService:
                     "priority": task.priority,
                 },
                 persistence_mode="applied",
+                confidence=0.95,
+                rationale_summary="La peticion de tarea era concreta y se ha guardado directamente.",
             )
 
         if classification.intent == AssistantIntent.TASK_QUERY:
@@ -204,6 +201,8 @@ class AssistantService:
                 action_taken="task_query",
                 entities={"count": len(tasks), "range_start": range_start.isoformat(), "range_end": range_end.isoformat()},
                 persistence_mode="none",
+                confidence=0.89,
+                rationale_summary="He consultado tus tareas en el rango temporal detectado y te devuelvo el resultado directo.",
             )
 
         if classification.intent == AssistantIntent.NOTE_CREATE:
@@ -220,6 +219,8 @@ class AssistantService:
                 action_taken="note_created",
                 entities={"note_id": note.id},
                 persistence_mode="applied",
+                confidence=0.94,
+                rationale_summary="La frase encajaba como nota directa y se ha guardado sin necesidad de aclaracion.",
             )
 
         if classification.intent == AssistantIntent.WEEK_CREATE:
@@ -235,6 +236,8 @@ class AssistantService:
                     "end_date": week.end_date.isoformat(),
                 },
                 persistence_mode="applied",
+                confidence=0.9,
+                rationale_summary="La peticion indicaba claramente crear una nueva semana en el planner.",
             )
 
         if classification.intent == AssistantIntent.REMINDER_CREATE:
@@ -245,6 +248,8 @@ class AssistantService:
                     action_taken="reminder_missing_date",
                     entities={},
                     persistence_mode="draft",
+                    confidence=0.42,
+                    rationale_summary="He detectado la intencion de recordatorio, pero falta el momento en el que debe dispararse.",
                 )
             reminder = await self.reminder_service.create(
                 user_id=user_id,
@@ -260,9 +265,11 @@ class AssistantService:
                 action_taken="reminder_created",
                 entities={"reminder_id": reminder.id, "scheduled_for": reminder.scheduled_for.isoformat()},
                 persistence_mode="applied",
+                confidence=0.96,
+                rationale_summary="El recordatorio incluia un momento claro y se ha guardado para que el watcher lo vigile.",
             )
 
-        context = await self._build_context(user_id=user_id)
+        context = await self.context_service.build_prioritized_context(user_id=user_id, query=message)
         try:
             ai_result = await self.ai_service.answer(message=message, context=context)
         except (RuntimeError, httpx.HTTPError) as exc:
@@ -274,6 +281,8 @@ class AssistantService:
                 entities={},
                 used_ai=False,
                 persistence_mode="none",
+                confidence=0.0,
+                rationale_summary="La capa de razonamiento con IA no estaba disponible en este momento.",
             )
         return AssistantMessageResponse(
             reply_text=ai_result.text,
@@ -282,4 +291,6 @@ class AssistantService:
             entities={"model": ai_result.model},
             used_ai=True,
             persistence_mode="none",
+            confidence=0.67,
+            rationale_summary="He usado la capa de IA con contexto priorizado de toda tu base para responder a una consulta abierta.",
         )

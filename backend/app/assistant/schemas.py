@@ -36,6 +36,23 @@ class AssistantMessageResponse(BaseModel):
     used_ai: bool = False
     persistence_mode: str = "none"
     planning_json: PlanningJson | None = None
+    confidence: float = 0.0
+    rationale_summary: str | None = None
+
+
+class AssistantNotificationResponse(BaseModel):
+    id: int
+    kind: str
+    title: str
+    message: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    channel_targets: list[str] = Field(default_factory=list)
+    status: str
+    source: str
+    created_at: datetime
+    sent_at: datetime | None = None
+    read_at: datetime | None = None
+    last_error: str | None = None
 
 
 class ParsedTemporalContext(BaseModel):

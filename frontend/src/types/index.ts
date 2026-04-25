@@ -98,6 +98,8 @@ export interface AssistantMessageResponse {
   entities: Record<string, unknown>;
   used_ai: boolean;
   persistence_mode: 'draft' | 'applied' | 'none';
+  confidence: number;
+  rationale_summary: string | null;
   planning_json: {
     tasks_detected: Array<{
       title: string;
@@ -119,6 +121,21 @@ export interface AssistantMessageResponse {
     }>;
     reasoning: string;
   } | null;
+}
+
+export interface AssistantNotification {
+  id: number;
+  kind: string;
+  title: string;
+  message: string;
+  payload: Record<string, unknown>;
+  channel_targets: string[];
+  status: string;
+  source: string;
+  created_at: string;
+  sent_at: string | null;
+  read_at: string | null;
+  last_error: string | null;
 }
 
 export interface PomodoroPreset {

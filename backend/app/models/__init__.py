@@ -9,6 +9,7 @@ from app.models.pomodoro_preset import PomodoroPreset
 from app.models.note import Note
 from app.models.reminder import Reminder
 from app.models.telegram_link import TelegramLink
+from app.models.assistant_notification import AssistantNotification
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "Note",
     "Reminder",
     "TelegramLink",
+    "AssistantNotification",
 ]

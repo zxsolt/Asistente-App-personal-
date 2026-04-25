@@ -26,3 +26,7 @@ class User(Base):
     notes: Mapped[list["Note"]] = relationship(back_populates="user", cascade="all, delete-orphan")  # type: ignore[name-defined] # noqa: F821
     reminders: Mapped[list["Reminder"]] = relationship(back_populates="user", cascade="all, delete-orphan")  # type: ignore[name-defined] # noqa: F821
     telegram_links: Mapped[list["TelegramLink"]] = relationship(back_populates="user", cascade="all, delete-orphan")  # type: ignore[name-defined] # noqa: F821
+    assistant_notifications: Mapped[list["AssistantNotification"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

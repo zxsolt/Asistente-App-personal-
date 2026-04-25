@@ -155,6 +155,9 @@ export const assistantApi = {
     channel: 'web' | 'telegram';
     metadata?: Record<string, unknown>;
   }) => api.post('/assistant/message', d).then((r) => r.data),
+  listNotifications: () => api.get('/assistant/notifications').then((r) => r.data),
+  markNotificationRead: (notificationId: number) =>
+    api.post(`/assistant/notifications/${notificationId}/read`).then((r) => r.data),
 };
 
 // ─── Notes ───────────────────────────────────────────────────────────────────

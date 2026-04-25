@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AssistantChat, { type ChatMessage } from '@/components/assistant/AssistantChat';
 import AssistantComposer from '@/components/assistant/AssistantComposer';
+import AssistantNotificationsPanel from '@/components/assistant/AssistantNotificationsPanel';
 import TelegramLinkCard from '@/components/assistant/TelegramLinkCard';
 import { assistantApi, telegramApi } from '@/lib/api';
-import type { AssistantMessageResponse, TelegramLinkCode } from '@/types';
+import type { AssistantMessageResponse, AssistantNotification, TelegramLinkCode } from '@/types';
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
@@ -18,10 +19,17 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [linkCode, setLinkCode] = useState<TelegramLinkCode | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: telegramLink, isLoading: linkLoading } = useQuery({
     queryKey: ['telegram-link'],
     queryFn: telegramApi.getLink,
+  });
+
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery<AssistantNotification[]>({
+    queryKey: ['assistant-notifications'],
+    queryFn: assistantApi.listNotifications,
+    refetchInterval: 30000,
   });
 
   const sendMessageMutation = useMutation({
@@ -32,6 +40,13 @@ export default function AssistantPage() {
   const linkCodeMutation = useMutation({
     mutationFn: telegramApi.createLinkCode,
     onSuccess: (data) => setLinkCode(data),
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: assistantApi.markNotificationRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assistant-notifications'] });
+    },
   });
 
   const sending = sendMessageMutation.isPending;
@@ -49,6 +64,7 @@ export default function AssistantPage() {
 
     try {
       const response: AssistantMessageResponse = await sendMessageMutation.mutateAsync(message);
+      queryClient.invalidateQueries({ queryKey: ['assistant-notifications'] });
       setMessages((current) => [
         ...current,
         {
@@ -113,6 +129,11 @@ export default function AssistantPage() {
               linkCode={linkCode}
               loading={generatingCode}
               onGenerateCode={() => linkCodeMutation.mutate()}
+            />
+            <AssistantNotificationsPanel
+              notifications={notifications}
+              loading={notificationsLoading}
+              onMarkRead={(notificationId) => markReadMutation.mutate(notificationId)}
             />
           </div>
 

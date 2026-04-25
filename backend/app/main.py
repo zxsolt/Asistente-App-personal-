@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ import app.models  # noqa: F401
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.security import hash_password
+from app.assistant.proactive_watcher import ProactiveWatcher
 from app.models.user import User
 from app.assistant import router as assistant_router
 from app.notes import router as notes_router
@@ -88,13 +90,26 @@ async def _ensure_bootstrap_admin() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    watcher_task: asyncio.Task | None = None
+    watcher: ProactiveWatcher | None = None
     # Create all tables on startup (dev convenience; use Alembic in production)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _ensure_sqlite_task_time_columns()
     await _ensure_sqlite_user_columns()
     await _ensure_bootstrap_admin()
-    yield
+    if settings.ASSISTANT_WATCHER_ENABLED:
+        watcher = ProactiveWatcher()
+        watcher_task = asyncio.create_task(watcher.run_forever())
+    try:
+        yield
+    finally:
+        if watcher:
+            watcher.stop()
+        if watcher_task:
+            watcher_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await watcher_task
 
 
 app = FastAPI(
