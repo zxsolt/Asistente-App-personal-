@@ -17,6 +17,7 @@ from app.assistant.formatters import (
 from app.assistant.schemas import AssistantChannel, AssistantIntent, AssistantMessageResponse
 from app.assistant.task_service import AssistantTaskService
 from app.notes.service import NoteService
+from app.planner.service import PlannerService
 from app.reminders.service import ReminderService
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class AssistantService:
         self.note_service = NoteService(db)
         self.reminder_service = ReminderService(db)
         self.ai_service = OpenRouterService()
+        self.planner_service = PlannerService(db)
 
     def _extract_multiple_tasks(self, message: str, cleaned_message: str) -> list[str]:
         normalized = normalize_text(message)
@@ -109,6 +111,22 @@ class AssistantService:
             },
         )
 
+        if self.planner_service.should_plan(message=message) and classification.intent not in {
+            AssistantIntent.NOTE_CREATE,
+            AssistantIntent.REMINDER_CREATE,
+            AssistantIntent.WEEK_CREATE,
+        }:
+            planner_result = await self.planner_service.build_plan(user_id=user_id, message=message)
+            return AssistantMessageResponse(
+                reply_text=planner_result.natural_response,
+                intent=classification.intent,
+                action_taken="plan_proposed",
+                entities={},
+                used_ai=False,
+                persistence_mode=planner_result.persistence_mode,
+                planning_json=planner_result.planning_json,
+            )
+
         if classification.intent == AssistantIntent.TASK_CREATE:
             multiple_tasks = self._extract_multiple_tasks(message, classification.cleaned_message)
             if multiple_tasks:
@@ -131,6 +149,7 @@ class AssistantService:
                     intent=classification.intent,
                     action_taken="task_batch_created",
                     entities={"task_ids": [task.id for task in created_tasks], "count": len(created_tasks)},
+                    persistence_mode="applied",
                 )
 
             if self._is_ambiguous_task_request(message, classification.cleaned_message):
@@ -143,6 +162,7 @@ class AssistantService:
                     intent=classification.intent,
                     action_taken="task_create_needs_details",
                     entities={},
+                    persistence_mode="draft",
                 )
 
             task = await self.task_service.create_task(
@@ -164,6 +184,7 @@ class AssistantService:
                     "due_at": task.due_at.isoformat() if task.due_at else None,
                     "priority": task.priority,
                 },
+                persistence_mode="applied",
             )
 
         if classification.intent == AssistantIntent.TASK_QUERY:
@@ -182,6 +203,7 @@ class AssistantService:
                 intent=classification.intent,
                 action_taken="task_query",
                 entities={"count": len(tasks), "range_start": range_start.isoformat(), "range_end": range_end.isoformat()},
+                persistence_mode="none",
             )
 
         if classification.intent == AssistantIntent.NOTE_CREATE:
@@ -197,6 +219,7 @@ class AssistantService:
                 intent=classification.intent,
                 action_taken="note_created",
                 entities={"note_id": note.id},
+                persistence_mode="applied",
             )
 
         if classification.intent == AssistantIntent.WEEK_CREATE:
@@ -211,6 +234,7 @@ class AssistantService:
                     "start_date": week.start_date.isoformat(),
                     "end_date": week.end_date.isoformat(),
                 },
+                persistence_mode="applied",
             )
 
         if classification.intent == AssistantIntent.REMINDER_CREATE:
@@ -220,6 +244,7 @@ class AssistantService:
                     intent=classification.intent,
                     action_taken="reminder_missing_date",
                     entities={},
+                    persistence_mode="draft",
                 )
             reminder = await self.reminder_service.create(
                 user_id=user_id,
@@ -234,6 +259,7 @@ class AssistantService:
                 intent=classification.intent,
                 action_taken="reminder_created",
                 entities={"reminder_id": reminder.id, "scheduled_for": reminder.scheduled_for.isoformat()},
+                persistence_mode="applied",
             )
 
         context = await self._build_context(user_id=user_id)
@@ -247,6 +273,7 @@ class AssistantService:
                 action_taken="ai_unavailable",
                 entities={},
                 used_ai=False,
+                persistence_mode="none",
             )
         return AssistantMessageResponse(
             reply_text=ai_result.text,
@@ -254,4 +281,5 @@ class AssistantService:
             action_taken="ai_response",
             entities={"model": ai_result.model},
             used_ai=True,
+            persistence_mode="none",
         )

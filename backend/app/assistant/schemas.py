@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.planner.schemas import PlanningJson
+
 
 class AssistantChannel(str, Enum):
     WEB = "web"
@@ -32,6 +34,8 @@ class AssistantMessageResponse(BaseModel):
     action_taken: str
     entities: dict[str, Any] = Field(default_factory=dict)
     used_ai: bool = False
+    persistence_mode: str = "none"
+    planning_json: PlanningJson | None = None
 
 
 class ParsedTemporalContext(BaseModel):

@@ -10,7 +10,7 @@ export interface ChatMessage {
 
 function metaLabel(response?: AssistantMessageResponse) {
   if (!response) return null;
-  return [response.intent, response.used_ai ? 'IA' : 'regla'].join(' · ');
+  return [response.intent, response.persistence_mode, response.used_ai ? 'IA' : 'regla'].join(' · ');
 }
 
 export default function AssistantChat({
@@ -46,9 +46,21 @@ export default function AssistantChat({
               >
                 <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
                 {!isUser && message.response && (
-                  <p className="mt-2 text-[11px] font-mono uppercase tracking-wider text-ink-dim">
-                    {metaLabel(message.response)}
-                  </p>
+                  <>
+                    <p className="mt-2 text-[11px] font-mono uppercase tracking-wider text-ink-dim">
+                      {metaLabel(message.response)}
+                    </p>
+                    {message.response.planning_json && (
+                      <div className="mt-3 rounded-xl border border-border bg-canvas/50 p-3">
+                        <p className="text-[11px] font-mono uppercase tracking-widest text-amber">
+                          planner json
+                        </p>
+                        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-ink-dim">
+                          {JSON.stringify(message.response.planning_json, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

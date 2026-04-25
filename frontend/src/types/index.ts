@@ -97,6 +97,28 @@ export interface AssistantMessageResponse {
   action_taken: string;
   entities: Record<string, unknown>;
   used_ai: boolean;
+  persistence_mode: 'draft' | 'applied' | 'none';
+  planning_json: {
+    tasks_detected: Array<{
+      title: string;
+      task_type: 'work' | 'study' | 'fitness' | 'personal';
+      phase: string | null;
+      source_clause: string | null;
+      inferred: boolean;
+    }>;
+    schedule: Array<{
+      day: string;
+      blocked: boolean;
+      tasks: Array<{
+        title: string;
+        task_type: 'work' | 'study' | 'fitness' | 'personal';
+        phase: string | null;
+        source_clause: string | null;
+        inferred: boolean;
+      }>;
+    }>;
+    reasoning: string;
+  } | null;
 }
 
 export interface PomodoroPreset {
